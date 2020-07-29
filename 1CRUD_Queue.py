@@ -102,11 +102,116 @@ class QueueManager:
             ]
         )
 
-    def sendMessageToStandardQueue(self):
-        print("sending message to standard queue")
+    def makeShortPollingCallWay1(self,queueUrl): #Change ReceiveMessageWaitTimeSeconds to 0 = More expensive
+
+        response = client2.set_queue_attributes(
+            QueueUrl=queueUrl,
+            Attributes={
+                'ReceiveMessageWaitTimeSeconds': str(0) #to 0
+            }
+        )
+
+        response = client2.receive_message(
+            QueueUrl=queueUrl,
+            AttributeNames=[
+                'All'
+            ],
+            MessageAttributeNames=[
+                'string',
+            ],
+            MaxNumberOfMessages=10,
+            VisibilityTimeout=120
+            #WaitTimeSeconds=0, #this is not specified
+        )
+
+        for messages in response:
+            print(messages)
+
+    def makeShortPollingCallWay2(self, queueUrl):  # Change ReceiveMessageWaitTimeSeconds to 0 = More expensive
+        response = client2.receive_message(
+            QueueUrl=queueUrl,
+            AttributeNames=[
+                'All'
+            ],
+            MessageAttributeNames=[
+                'string',
+            ],
+            MaxNumberOfMessages=10,
+            VisibilityTimeout=120,
+            WaitTimeSeconds=0, #this!!!
+        )
+
+    def makeLongPollingCall(self,queueUrl,timePollingValue): #Change ReceiveMessageWaitTimeSeconds between 1 and 20 = Less expensive
+        response = client2.receive_message(
+            QueueUrl=queueUrl,
+            AttributeNames=[
+                'All'
+            ],
+            MessageAttributeNames=[
+                'string',
+            ],
+            MaxNumberOfMessages=10,
+            VisibilityTimeout=120,
+            WaitTimeSeconds=timePollingValue #this needs to be at least 1!!!
+        )
+
+    def knowIfQueueHasShortOrLongPolling(self, queueUrl):
+        response = client2.get_queue_attributes(
+            QueueUrl=queueUrl,
+            AttributeNames=[
+                'ReceiveMessageWaitTimeSeconds'
+            ]
+        )
+        print(response)
+
+    def getQueueAttributes(self, queueUrl):
+        response = client2.get_queue_attributes(
+            QueueUrl=queueUrl,
+            AttributeNames=[
+                'Policy' , 'VisibilityTimeout' , 'MaximumMessageSize' , 'MessageRetentionPeriod' , 'ApproximateNumberOfMessages' , 'ApproximateNumberOfMessagesNotVisible' , 'CreatedTimestamp' , 'LastModifiedTimestamp' , 'QueueArn' , 'ApproximateNumberOfMessagesDelayed' , 'DelaySeconds' ,'ReceiveMessageWaitTimeSeconds' , 'RedrivePolicy' ,  'KmsMasterKeyId' , 'KmsDataKeyReusePeriodSeconds',
+            ]
+        )
+        print(response.body)
+
+    def deleteQueue(self, queueUrl):
+        response = client2.delete_queue(
+            QueueUrl=queueUrl
+        )
+
+    def sendMessageToStandardQueue(self,queueUrl, message, delaySeconds):
+        response = client2.send_message(
+            QueueUrl=queueUrl,
+            MessageBody=str(message),
+            DelaySeconds=int(delaySeconds)
+        )
 
     def sendMessageToFIFOQueue(self):
-        print("sending message to fifo queue")
+        response = client2.send_message(
+            QueueUrl='string',
+            MessageBody='string',
+            DelaySeconds=123,
+            MessageAttributes={
+                'Author': {
+                        'StringValue': 'Ruben',
+                        'DataType': 'String'
+                        }
+            },
+            MessageSystemAttributes={
+                'string': {
+                    'StringValue': 'string',
+                    'BinaryValue': b'bytes',
+                    'StringListValues': [
+                        'string',
+                    ],
+                    'BinaryListValues': [
+                        b'bytes',
+                    ],
+                    'DataType': 'string'
+                }
+            },
+            MessageDeduplicationId='string',
+            MessageGroupId='string'
+        )
 
     def sendMessageWithAttributesToStandardQueue(self):
         print("sending message to standard queue")
@@ -120,25 +225,20 @@ class QueueManager:
     def sendMessageWithTimerToFIFOQueue(self):
         print("sending message to fifo queue")
 
-    def shortPolling(self):
-        print("short")
-
-    def longPolling(self):
-        print("long")
-
-    def startPoolingForMessages(self):
-        print("fetching messages...")
-
     def deleteMessages(self):
         print("deleting messages")
-
-    def deleteQueue(self):
-        print("this queue was deleted")
-
 
 newQueueG = QueueManager()
 #newQueueG.createFIFOQueue("queue1","0","1024","60","0")
 #newQueueG.getAllQueueNames()
 #queue::>  https://eu-west-1.queue.amazonaws.com/569214539827/prueba1
 #queue::>  https://eu-west-1.queue.amazonaws.com/569214539827/queue12.fifo
-newQueueG.addNewTagToQueue('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1', 'department','IT')
+#newQueueG.addNewTagToQueue('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1', 'department','IT')
+#newQueueG.knowIfQueueHasShortOrLongPolling('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1')
+
+# newQueueG.sendMessageToStandardQueue('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1', 'hola!', 5)
+# newQueueG.sendMessageToStandardQueue('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1', 'hola!', 5)
+# newQueueG.sendMessageToStandardQueue('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1', 'hola!', 5)
+newQueueG.makeShortPollingCallWay1('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1')
+#newQueueG.knowIfQueueHasShortOrLongPolling('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1')
+#newQueueG.makeShortPollingCallWay2('https://eu-west-1.queue.amazonaws.com/569214539827/prueba1')
